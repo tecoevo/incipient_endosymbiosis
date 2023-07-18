@@ -12,7 +12,7 @@ Further detailed information required for reproducing the results in the paper i
 
 ## Analytics ##
 
-This directory contains 3 files, each of which deals loosely with one of the figures of the main text. They are further commented within and should be self-explanatory. 
+This folder contains 3 files, each of which deals loosely with one of the figures of the main text. They are further commented within and should be self-explanatory. 
 
 * `obligacy-evolution.nb` deals with understanding the independent evolution of the obligacies, in particular for the analytics underlying the invasion fitness and other insights behind Figure 1. 
 * `adhesion-evolution.nb` deals with understanding the independent evolution of the adhesions, in particular for the analytics and insights behind Supplementary Figure 2. 
@@ -31,7 +31,7 @@ Both these folders have 4 subfolders:
 * `adhesion-evolution` contains scripts for simulating and plotting the independent evolution of the adhesions.
 * `coevolution` contains scripts for simulating and plotting the coevolution of the obligacies with adhesions.
 
-Note: all scripts in C-exp-growth re-compute the stochastic evolutionary trajectories every time since the exponential growth model is analytically solvable, making computations faster since we can put in some expressions 'by hand'. However, all scripts used to make figures in ./C-logistic-growth/ simply plot an already present set of data files which were obtained by running the relevant scripts on a cluster. For example, in ./C-logistic-growth/obligacy-evolution, the file to run on a cluster is HPC-obligacy-trajectory. And once all the data files from there are in ./data (available on request, not included for their large size), one can use analyse-obligacy-trajectory-data.py to plot them. 
+Note: all scripts in `./C-exp-growth/` re-compute the stochastic evolutionary trajectories every time since the exponential growth model is analytically solvable, making computations faster since we can put in some expressions 'by hand'. However, all scripts used to make figures in `./C-logistic-growth/` simply plot an already present set of data files which were obtained by running the relevant scripts on a cluster. For example, in `./C-logistic-growth/obligacy-evolution`, the file to run on a cluster is `HPC-obligacy-trajectory.py` And once all the data files from there are in `./data` (available on request, not included for their large size), one can use `analyse-obligacy-trajectory-data.py` to plot them. 
 
 ## FigureSources ##
 
