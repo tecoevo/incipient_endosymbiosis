@@ -4,6 +4,7 @@ import random
 from matplotlib.lines import Line2D
 import multiprocessing as mp
 import pandas as pd 
+import os
 
 verbose = True
 
@@ -12,7 +13,7 @@ verbose = True
 
 CH = 100.0
 CS = 2*CH # we assume that the carrying capacity of the symbiont is twice that of the host
-CHS = 5*CH
+CHS = 10000.0
 
 fH = 8.0
 fS = 20.0 # how large is the pure symbiont growth rate as compared to the pure host growth rate?
@@ -20,12 +21,26 @@ rHS = 10.0 # we assume that the complex, at its full performance, can grow at tw
 # This is an assumption of the ecology - we visualise the case when the symbiont allows the host to occupy a new niche.
 
 a = 0.1 
-d0 = 80.0
+d0 = 50.0
 
 # initialise lists that will hold values of the obligacies - these will be plotted against each other later to view the trajectory
 
-timesteps = 500
-no_runs = 10
+timesteps = 1000
+no_runs = 75
+
+# make sure all directories necessary to store results exist
+jobname = 'a=' + str(a) + '_rHS=' + str(rHS) + '_CHS=' + str(CHS) # if there is further subdivision within the folder 'data'. if not, leave empty
+
+try:
+    os.mkdir("results/data/"+jobname)
+except:
+    pass
+
+try:
+    os.mkdir("results/plots/"+jobname)
+except:
+    pass
+
 
 # we model evolution of the trait (omega_i, alpha_i) as a continuous-time Markov chain (CTMC).
 # Mutations can arise, when the H-S-HS population is at dynamical equilibrium, in either the host or symbiont. 
@@ -38,7 +53,7 @@ no_runs = 10
 # selection gradient is 1 for both. We assume that the mutational process for host and symbiont is similar, and so which 
 # of the two obligacies grows faster is determined only by the equilibrium population abundance. 
 
-mutation_std = 0.005
+mutation_std = 0.01
 
 def d(alphaH, alphaS):
      return d0*(1-alphaH*alphaS)
@@ -80,13 +95,32 @@ def MutateHost(currentH, currentS, xHstar, xSstar, xHSstar, trajectoryH, traject
      # Briefly, mutants invade when they decrease the value of d/fHS
      trajectoryS.append(currentS)
      mutantH = np.clip(random.gauss(currentH,mutation_std), a_min=0, a_max=1)
-     mutantH_jacobian = [[fH*(1-xHstar/CH) - a*xSstar, d(mutantH, currentS)], 
-     [a*xSstar, fHS(mutantH, currentS)*(1-xHSstar/CHS) - d(mutantH, currentS)]]
-     mutantH_eigenvalues = np.linalg.eigvals(mutantH_jacobian)
-     if np.max([np.real(val) for val in mutantH_eigenvalues])>0:
+     print('mutantH value: ', mutantH)
+
+     host_inflow_dueto_encounterrateH = (d(mutantH, currentS)*a*xSstar)/(d(mutantH, currentS) - fHS(mutantH, currentS) + (fHS(mutantH, currentS)*xHSstar)/(CHS))
+     host_inflow_dueto_independentreproduction = fH
+     host_outflow = a*xSstar + (fH*xHstar)/(CH)
+     R0H = (host_inflow_dueto_independentreproduction + host_inflow_dueto_encounterrateH)/host_outflow
+     print("R0H = ", R0H)
+     if R0H>1+10**(-7):
          trajectoryH.append(mutantH)
+         print('mutantH accepted')
      else:
          trajectoryH.append(currentH)
+         print('mutantH rejected')
+
+    #  mutantH_jacobian = [[fH*(1-xHstar/CH) - a*xSstar, d(mutantH, currentS)], 
+    #  [a*xSstar, fHS(mutantH, currentS)*(1-xHSstar/CHS) - d(mutantH, currentS)]]
+    #  mutantH_eigenvalues = np.linalg.eigvals(mutantH_jacobian)
+    #  realpartsH = [np.real(val) for val in mutantH_eigenvalues]
+    #  print('real parts H: ', realpartsH)
+     
+    #  if np.max(realpartsH)>10**(-7):
+    #      trajectoryH.append(mutantH)
+    #      print('mutantH accepted')
+    #  else:
+    #      trajectoryH.append(currentH)
+    #      print('mutantH rejected')
 
 def MutateSymbiont(currentH, currentS, xHstar, xSstar, xHSstar, trajectoryH, trajectoryS):
      # induce mutation in host obligacy and decide fate of the mutant. For derivation of
@@ -94,13 +128,32 @@ def MutateSymbiont(currentH, currentS, xHstar, xSstar, xHSstar, trajectoryH, tra
      # Briefly, mutants invade when they decrease the value of d/fHS
      trajectoryH.append(currentH)
      mutantS = np.clip(random.gauss(currentS,mutation_std), a_min=0, a_max=1)
-     mutantS_jacobian = [[fS*(1-xSstar/CS) - a*xHstar, d(currentH, mutantS)], 
-     [a*xHstar, fHS(currentH, mutantS)*(1-xHSstar/CHS) - d(currentH, mutantS)]]
-     mutantS_eigenvalues = np.linalg.eigvals(mutantS_jacobian)
-     if np.max([np.real(val) for val in mutantS_eigenvalues])>0:
+     print('mutantS value: ', mutantS)
+
+     symb_inflow_dueto_encounterrateH = (d(currentH, mutantS)*a*xHstar)/(d(currentH, mutantS) - fHS(currentH, mutantS) + (fHS(currentH, mutantS)*xHSstar)/(CHS))
+     symb_inflow_dueto_independentreproduction = fS
+     symb_outflow = a*xHstar + (fS*xSstar)/(CS)
+     R0S = (symb_inflow_dueto_independentreproduction + symb_inflow_dueto_encounterrateH)/symb_outflow
+     print("R0S = ", R0S)
+     if R0S>1+10**(-7):
          trajectoryS.append(mutantS)
+         print('mutantS accepted')
      else:
          trajectoryS.append(currentS)
+         print('mutantS rejected')
+     
+    #  mutantS_jacobian = [[fS*(1-xSstar/CS) - a*xHstar, d(currentH, mutantS)], 
+    #  [a*xHstar, fHS(currentH, mutantS)*(1-xHSstar/CHS) - d(currentH, mutantS)]]
+    #  mutantS_eigenvalues = np.linalg.eigvals(mutantS_jacobian)
+    #  realpartsS = [np.real(val) for val in mutantS_eigenvalues]
+    #  print('real parts S: ', realpartsS)
+     
+    #  if np.max(realpartsS)>10**(-7):
+    #      trajectoryS.append(mutantS)
+    #      print('mutantS accepted')
+    #  else:
+    #      trajectoryS.append(currentS)
+    #      print('mutantS rejected')
      
 def run_model(run_no):
      # Runs one simulation of the lattice model and saves the trajectory of traits of H and S at each mutation
@@ -109,17 +162,19 @@ def run_model(run_no):
      
      if verbose==True:
          print("started run number", run_no)
-     trait_trajectoryH = [0.7]
-     trait_trajectoryS = [0.7]
+     trait_trajectoryH = [0.001]
+     trait_trajectoryS = [0.001]
      for t in range(timesteps):
+         print("\n NEW EVOL TIMESTEP")
          if t%20==0:
              print("now at evolution timestep ",t)
          alphaH = trait_trajectoryH[-1]
          alphaS = trait_trajectoryS[-1]
-
+         print(t, alphaH, alphaS)
          # calculate fixed point of population dynamics
          try:
              xHstar, xSstar, xHSstar = GetPopDynSoln(alphaH, alphaS)
+             print('population sizes:', xHstar, xSstar, xHSstar)
          except:
              print("ode solver didn't converge. timesteps: ", len(trait_trajectoryH))
              print("trait value at this time. traitH = ", alphaH, "traitS = ", alphaS)
@@ -140,30 +195,17 @@ def run_model(run_no):
          #  # for stability, we use the eigenvalues: the fixed point of the dynamical system giving
          #  # rise to the above Jacobian is stable iff all its eigenvalues have negative real part
          #  resident_eigenvalues = np.linalg.eigvals(jacobian)
-     
-         # if any of the oligacies are 1, for example the host, then the host cannot live independently.
-         # therefore, the population goes to zero abundance and no further mutants can arise.
-         # strictly speaking, the below block isn't necessary because np.clip when generating the mutant trait
-         # value should keep the trait at 1 no matter how many times Mutate is called. But removing this would 
-         # lead to numerous useless Mutate calls and wasted time.
-
-         if alphaH >= 1.0:
-             MutateSymbiont(alphaH, alphaS, xHstar, xSstar, xHSstar, trait_trajectoryH, trait_trajectoryS)
-             continue
-         if alphaS >= 1.0:
-             MutateHost(alphaH, alphaS, xHstar, xSstar, xHSstar, trait_trajectoryH, trait_trajectoryS)
-             continue
-         if alphaH >= 1.0 and alphaS >= 1:
-             break
- 
+      
          # start the exponential clocks for host and symbiont populations
          clocks = [random.expovariate(xHstar), random.expovariate(xSstar)]
          if np.min(clocks) == clocks[0]:
              # the host clock went off first and so now we mutate the host trait
              MutateHost(alphaH, alphaS, xHstar, xSstar, xHSstar, trait_trajectoryH, trait_trajectoryS)
+             print('host mutated')
          if np.min(clocks) == clocks[1]:
              # the host clock went off first and so now we mutate the host trait
              MutateSymbiont(alphaH, alphaS, xHstar, xSstar, xHSstar, trait_trajectoryH, trait_trajectoryS)
+             print('symbiont mutated')
          elif clocks[0]==clocks[1]:
              # mutate host with probability 1/2, and symbiont with probability 1/2
              mutantpicker = random.uniform(0.0,1.0)
@@ -195,20 +237,58 @@ if __name__ == '__main__':
      pool.close() # close the processes
      pool.join()  # finalise the processes by recording results
 
-     # to plot stochastic obligacy trajectories
+          # save data for later plotting
+     for run in range(no_runs): 
+         alphaH_traj = np.around(allrunsH[run], 4)
+         alphaS_traj = np.around(allrunsS[run], 4)         
+         data = pd.DataFrame(list(zip(alphaH_traj, alphaS_traj)), columns=['alphaH','alphaS'])
+         data.to_csv("results/data/" + jobname + "/" + "adhesion-trajectory_" + jobname +"_run"+str(run)+".txt", index=False)
+     
+     # to make the final image smaller we work with a "zoomed out" array consisting only of every tenth element of the first array
+     for r in range(no_runs):
+         runH = allrunsH[r]
+         runS = allrunsS[r]
+         allrunsH[r] = runH[0::10]
+         allrunsS[r] = runS[0::10]
+
+     meanH = np.mean(allrunsH, axis=0)
+     meanS = np.mean(allrunsS, axis=0)
+
+     # plot adhesion trajectories
      for run in range(no_runs):
          alphaH_traj = np.around(allrunsH[run], 4)
-         alphaS_traj = np.around(allrunsS[run], 4)
-         data = pd.DataFrame(list(zip(alphaH_traj, alphaS_traj)), columns=['alphaH','alphaS'])
-         data.to_csv("stickiness-trajectory_rHS="+str(rHS) + "_d0=" + str(d0)+"_run"+str(run)+".txt", index=False)
-         plt.plot(alphaH_traj, alphaS_traj, linewidth=0.75)
- 
-     plt.plot(np.arange(0,1.0,0.001), np.arange(0,1.0,0.001), 'k', linestyle='--')
+         alphaS_traj = np.around(allrunsS[run], 4)         
+         plt.plot(alphaH_traj, alphaS_traj, '0.55', linewidth=0.75)  
+             
+     plt.plot(meanH, meanS, 'k', linewidth=2) # mean alphaH - alphaS trajectory
+
+     plt.plot(np.arange(0,1.0,0.001), np.arange(0,1.0,0.001), 'k', linestyle='--') # draw the line x=y
+     plt.plot(np.arange(0,1.0,0.001), [1.0]*len(np.arange(0,1.0,0.001)), 'k', linewidth=0.5) # draw horizontal line y=1 
+     plt.plot([1.0]*len(np.arange(0,1.0,0.001)), np.arange(0,1.0,0.001), 'k', linewidth=0.5) # draw vertical line x=1 
      plt.xlim(0,1.1)
      plt.ylim(0,1.1)
-     plt.grid(visible=True, axis='both')
      plt.gca().set_aspect('equal')
-     plt.savefig("stickiness-trajectory_rHS="+str(rHS) + "_d0=" + str(d0)+".pdf",format='pdf')
+     plt.savefig("results/plots/" + jobname + "/" + "adhesion-trajectory_" + jobname  +".pdf",format='pdf')
+     plt.show()
+     plt.close()
 
+     for trait_trajectoryH in allrunsH:
+         plt.plot(range(len(trait_trajectoryH)), trait_trajectoryH, '0.55', linewidth=0.75)
+    
+     plt.plot(range(len(meanH)), meanH, 'k', linewidth=2)
+     plt.plot(range(len(meanH)), [1.0]*len(meanH), 'k', linestyle='--')
+     plt.ylim(0,1.1)
+     plt.savefig("results/plots/" + jobname + "/" + "host-adhesion-trajectory_" + jobname +".pdf",format='pdf')
+     plt.show()
+     plt.close()
+
+     for trait_trajectoryS in allrunsS:
+         plt.plot(range(len(trait_trajectoryS)), trait_trajectoryS, '0.55', linewidth=0.75)
+     
+     plt.plot(range(len(meanS)), meanS, 'k', linewidth=2)
+     plt.plot(range(len(meanS)), [1.0]*len(meanS), 'k', linestyle='--')
+     plt.ylim(0,1.1)
+     plt.savefig("results/plots/" + jobname + "/" + "symbiont-adhesion-trajectory_" + jobname  +".pdf",format='pdf')
+     plt.show()
 
 

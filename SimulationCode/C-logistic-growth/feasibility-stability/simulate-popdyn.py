@@ -55,14 +55,14 @@ if which == 'omega':
        plt.legend()
        plt.show()
 
-if which == 'sigma':
+if which == 'alpha':
        fH = 8.0
        fS = 20.0
        rHS = 10.0 # we assume that the complex, at its full performance, can grow at twice the rate of the host. 
        d0 = 50.0
 
-       sigmaH = 0.95
-       sigmaS = 1.0
+       alphaH = 0.95
+       alphaS = 1.0
 
        dt = 0.001
        xH = 10.0
@@ -76,9 +76,9 @@ if which == 'sigma':
              xHarray.append(xH)
              xSarray.append(xS)
              xHSarray.append(xHS)
-             xH += dt*(fH*xH*(1-xH/CH) - a*xH*xS + d0*(1-sigmaH*sigmaS)*xHS)
-             xS += dt*(fS*xS*(1-xS/CS) - a*xH*xS + d0*(1-sigmaH*sigmaS)*xHS)
-             xHS += dt*(rHS*sigmaH*sigmaS*xHS*(1-xHS/CHS) + a*xH*xS - d0*(1-sigmaH*sigmaS)*xHS)
+             xH += dt*(fH*xH*(1-xH/CH) - a*xH*xS + d0*(1-alphaH*alphaS)*xHS)
+             xS += dt*(fS*xS*(1-xS/CS) - a*xH*xS + d0*(1-alphaH*alphaS)*xHS)
+             xHS += dt*(rHS*alphaH*alphaS*xHS*(1-xHS/CHS) + a*xH*xS - d0*(1-alphaH*alphaS)*xHS)
  
        print(xH, xS, xHS)
 

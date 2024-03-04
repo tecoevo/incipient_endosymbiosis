@@ -22,33 +22,35 @@ def HomogeniseLength(oldx,oldy, newlen):
 
 # parameters needed for file
 
-rH=8.0
-rS=20.0
-rHS=10.0
+rH=10.0
+rS=10.0
+rHS=40.0
 
-d0=50.0
+CHS=500.0
 
 time_skip=10
 runlengths = []
 allrunsH = []
 allrunsS = []
+srcdir = 'HS-identical'#'rHS=' + str(rHS) + '_CHS=' + str(CHS) # if there is further subdivision within the folder 'data'. if not, leave empty
 
 # Read each file and plot it.
 
 
-for fil in os.listdir('./results/data/'+ 'rHS=' + str(rHS) + '_d0=' + str(d0)):
-     filename = './results/data/'+ 'rHS=' + str(rHS) + '_d0=' + str(d0) + '/' + fil
-     trait_trajectoryH = np.loadtxt(filename, dtype='float', delimiter=',', skiprows=1, usecols=0)
-     trait_trajectoryS = np.loadtxt(filename, dtype='float', delimiter=',', skiprows=1, usecols=1)
+for fil in os.listdir('./results/data/'+srcdir):
+     if not fil.startswith('.'):
+      filename = 'results/data/' + srcdir + '/' + fil
+      trait_trajectoryH = np.loadtxt(filename, dtype='float', delimiter=',', skiprows=1, usecols=0)
+      trait_trajectoryS = np.loadtxt(filename, dtype='float', delimiter=',', skiprows=1, usecols=1)
 
-     trait_trajectoryH = trait_trajectoryH[0::time_skip]
-     trait_trajectoryS = trait_trajectoryS[0::time_skip]
+      trait_trajectoryH = trait_trajectoryH[0::time_skip]
+      trait_trajectoryS = trait_trajectoryS[0::time_skip]
 
-     runlengths.append(len(trait_trajectoryH))
-     allrunsH.append(trait_trajectoryH)
-     allrunsS.append(trait_trajectoryS)
+      runlengths.append(len(trait_trajectoryH))
+      allrunsH.append(trait_trajectoryH)
+      allrunsS.append(trait_trajectoryS)
 
-     plt.plot(trait_trajectoryH, trait_trajectoryS, '0.55', linewidth=0.75) 
+      plt.plot(trait_trajectoryH, trait_trajectoryS, '0.55', linewidth=0.75) 
 
 maxruntime = np.max(runlengths)
 newrunsH = []
@@ -70,17 +72,27 @@ plt.plot([1.0]*len(np.arange(0,1.0,0.001)), np.arange(0,1.0,0.001), 'k', linewid
 plt.xlim(0,1.1)
 plt.gca().set_aspect('equal')
 plt.ylim(0,1.1)
-plt.savefig("results/plots/stickiness-trajectory_rHS="+str(rHS) + "_d0=" + str(d0) +".pdf",format='pdf')
+plt.savefig("results/plots/stickiness-trajectory_" + srcdir + ".pdf",format='pdf')
 plt.show()
 
 for trait_trajectoryH in allrunsH:
       plt.plot(range(len(trait_trajectoryH)), trait_trajectoryH, '0.55', linewidth=0.75)
-      plt.plot(range(maxruntime), meanH, 'k', linewidth=2)
 
+# plt.plot(range(maxruntime), meanH, 'k', linewidth=2)
 plt.plot(range(maxruntime), [1.0]*maxruntime, 'k', linestyle='--')
 plt.ylim(0,1.1)
-plt.savefig("results/plots/host-stickiness-trajectory_rHS="+str(rHS) + "_d0=" + str(d0) +".pdf",format='pdf')
+plt.savefig("results/plots/host-stickiness-trajectory_"+ srcdir + ".pdf",format='pdf')
 plt.show()
+
+for trait_trajectoryS in allrunsS:
+      plt.plot(range(len(trait_trajectoryS)), trait_trajectoryS, '0.55', linewidth=0.75)
+
+# plt.plot(range(maxruntime), meanS, 'k', linewidth=2)
+plt.plot(range(maxruntime), [1.0]*maxruntime, 'k', linestyle='--')
+plt.ylim(0,1.1)
+plt.savefig("results/plots/symbiont-stickiness-trajectory_"+ srcdir + ".pdf",format='pdf')
+plt.show()
+
 
 
 

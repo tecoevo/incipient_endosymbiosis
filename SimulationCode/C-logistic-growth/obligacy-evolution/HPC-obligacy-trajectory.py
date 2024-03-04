@@ -97,13 +97,58 @@ def MutateHost(currentH, currentS, xHstar, xSstar, xHSstar, trajectoryH, traject
      # Briefly, mutants invade when they decrease the value of d/fHS
      trajectoryS.append(currentS)
      mutantH = np.clip(random.gauss(currentH,mutation_std), a_min=0, a_max=1)
-     mutantH_jacobian = [[fH(mutantH)*(1-xHstar/CH) - a*xSstar, d], 
-     [a*xSstar, fHS(mutantH, currentS)*(1-xHSstar/CHS) - d]]
-     mutantH_eigenvalues = np.linalg.eigvals(mutantH_jacobian)
-     if np.max([np.real(val) for val in mutantH_eigenvalues])>0:
+     print('mutantH value: ', mutantH)
+
+     host_inflow_dueto_encounterrateH = (d*a*xSstar)/(d - fHS(mutantH, currentS) + (fHS(mutantH, currentS)*xHSstar)/(CHS))
+     host_inflow_dueto_independentreproduction = fH(mutantH)
+     host_outflow = a*xSstar + (fH(mutantH)*xHstar)/(CH)
+     R0H = (host_inflow_dueto_independentreproduction + host_inflow_dueto_encounterrateH)/host_outflow
+     print("R0H = ", R0H)
+
+     # can also do: 
+    #  mutantH_jacobian = [[fH(mutantH)*(1-xHstar/CH) - a*xSstar, d], 
+    #  [a*xSstar, fHS(mutantH, currentS)*(1-xHSstar/CHS) - d]]
+    #  mutantH_eigenvalues = np.linalg.eigvals(mutantH_jacobian)
+    #  realpartsH = [np.real(val) for val in mutantH_eigenvalues]
+    #  print("mutantH eigvals", mutantH_eigenvalues)
+    #  print("rounded realparts ", realpartsH)
+     
+     if R0H>1 + 10**(-7): # to exclude floating point errors
          trajectoryH.append(mutantH)
+         print('mutantH accepted')
      else:
          trajectoryH.append(currentH)
+         print('mutantH rejected')
+
+def MutateSymbiont(currentH, currentS, xHstar, xSstar, xHSstar, trajectoryH, trajectoryS):
+     # induce mutation in host obligacy and decide fate of the mutant. For derivation of
+     # invasion criterion, see main text.
+     # Briefly, mutants invade when they decrease the value of d/fHS
+     trajectoryH.append(currentH)
+     mutantS = np.clip(random.gauss(currentS,mutation_std), a_min=0, a_max=1)
+     print('mutantS value: ', mutantS)
+
+     symb_inflow_dueto_encounterrateH = (d*a*xHstar)/(d - fHS(currentH, mutantS) + (fHS(currentH, mutantS)*xHSstar)/(CHS))
+     symb_inflow_dueto_independentreproduction = fS(mutantS)
+     symb_outflow = a*xHstar + (fS(mutantS)*xSstar)/(CS)
+     R0S = (symb_inflow_dueto_independentreproduction + symb_inflow_dueto_encounterrateH)/symb_outflow
+     print("R0S = ", R0S)
+    
+     # can also do: 
+    #  mutantS_jacobian = [[fS(mutantS)*(1-xSstar/CS) - a*xHstar, d], 
+    #  [a*xHstar, fHS(currentH, mutantS)*(1-xHSstar/CHS) - d]]
+    #  mutantS_eigenvalues = np.linalg.eigvals(mutantS_jacobian)
+    #  realpartsS = [np.real(val) for val in mutantS_eigenvalues]
+    #  print("mutantS eigvals", mutantS_eigenvalues)
+    #  print("rounded realparts ", realpartsS)
+     
+     if R0S>1+10**(-7): # to exclude floating point errors
+         trajectoryS.append(mutantS)
+         print('mutantS accepted')
+     else:
+         trajectoryS.append(currentS)
+         print('mutantS rejected')
+
 
 def MutateSymbiont(currentH, currentS, xHstar, xSstar, xHSstar, trajectoryH, trajectoryS):
      # induce mutation in host obligacy and decide fate of the mutant. For derivation of
@@ -150,21 +195,6 @@ for t in range(timesteps):
     #  # for stability, we use the eigenvalues: the fixed point of the dynamical system giving
     #  # rise to the above Jacobian is stable iff all its eigenvalues have negative real part
     #  resident_eigenvalues = np.linalg.eigvals(jacobian)
-
-    # if any of the oligacies are 1, for example the host, then the host cannot live independently.
-    # therefore, the population goes to zero abundance and no further mutants can arise.
-    # strictly speaking, the below block isn't necessary because np.clip when generating the mutant trait
-    # value should keep the trait at 1 no matter how many times Mutate is called. But removing this would 
-    # lead to numerous useless Mutate calls and wasted time.
-
-    if omegaH >= 1.0:
-        MutateSymbiont(omegaH,omegaS, xHstar, xSstar, xHSstar, trait_trajectoryH, trait_trajectoryS)
-        continue
-    if omegaS >= 1.0:
-        MutateHost(omegaH,omegaS, xHstar, xSstar, xHSstar, trait_trajectoryH, trait_trajectoryS)
-        continue
-    if omegaH >= 1.0 and omegaS >= 1:
-        break
 
     # start the exponential clocks for host and symbiont populations
     clocks = [random.expovariate(xHstar), random.expovariate(xSstar)]

@@ -30,7 +30,7 @@ CHS = 5*CH
 
 fH = 8.0
 fS = 20.0 # how large is the pure symbiont growth rate as compared to the pure host growth rate?
-rHS = 10.0 # we assume that the complex, at its full performance, can grow at twice the rate of the host. 
+rHS = 40.0 # we assume that the complex, at its full performance, can grow at twice the rate of the host. 
 # This is an assumption of the ecology - we visualise the case when the symbiont allows the host to occupy a new niche.
 
 a = 0.1 
@@ -49,7 +49,7 @@ d0 = 50.0
 # selection gradient is 1 for both. We assume that the mutational process for host and symbiont is similar, and so which 
 # of the two obligacies grows faster is determined only by the equilibrium population abundance. 
 
-mutation_std = 0.005
+mutation_std = 0.01
 
 def d(alphaH, alphaS):
      return d0*(1-alphaH*alphaS)
@@ -91,10 +91,12 @@ def MutateHost(currentH, currentS, xHstar, xSstar, xHSstar, trajectoryH, traject
      # Briefly, mutants invade when they decrease the value of d/fHS
      trajectoryS.append(currentS)
      mutantH = np.clip(random.gauss(currentH,mutation_std), a_min=0, a_max=1)
+
      mutantH_jacobian = [[fH*(1-xHstar/CH) - a*xSstar, d(mutantH, currentS)], 
      [a*xSstar, fHS(mutantH, currentS)*(1-xHSstar/CHS) - d(mutantH, currentS)]]
      mutantH_eigenvalues = np.linalg.eigvals(mutantH_jacobian)
-     if np.max([np.real(val) for val in mutantH_eigenvalues])>0:
+     realpartsH = [np.real(val) for val in mutantH_eigenvalues]
+     if np.max(realpartsH)>10**(-7):
          trajectoryH.append(mutantH)
      else:
          trajectoryH.append(currentH)
@@ -108,7 +110,7 @@ def MutateSymbiont(currentH, currentS, xHstar, xSstar, xHSstar, trajectoryH, tra
      mutantS_jacobian = [[fS*(1-xSstar/CS) - a*xHstar, d(currentH, mutantS)], 
      [a*xHstar, fHS(currentH, mutantS)*(1-xHSstar/CHS) - d(currentH, mutantS)]]
      mutantS_eigenvalues = np.linalg.eigvals(mutantS_jacobian)
-     if np.max([np.real(val) for val in mutantS_eigenvalues])>0:
+     if np.max([np.real(val) for val in mutantS_eigenvalues])>10**(-7):
          trajectoryS.append(mutantS)
      else:
          trajectoryS.append(currentS)
@@ -121,6 +123,7 @@ for t in range(timesteps):
         print("now at evolution timestep ",t)
     alphaH = trait_trajectoryH[-1]
     alphaS = trait_trajectoryS[-1]
+    print(alphaH, alphaS, '\n')
 
     # calculate fixed point of population dynamics
     try:
