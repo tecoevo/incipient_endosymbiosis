@@ -1,4 +1,4 @@
-### This repository contains the scripts, Mathematica notebooks, and figure generation pipelines for the paper ["On the structure of an evolutionary transition: dependence and cohesion in incipient endosymbioses"](https://doi.org/10.1101/2023.07.17.549359) (Athreya, Czuppon, Gokhale).
+### This repository contains the scripts, Mathematica notebooks, and figure generation pipelines for the paper "On the structure of an evolutionary transition: dependence and cohesion in incipient endosymbioses".
 
 ## Overview ##
 
